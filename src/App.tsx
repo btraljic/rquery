@@ -1,26 +1,83 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import axios from 'axios'
+import { QueryClient } from 'react-query'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: Infinity,
+    },
+  },
+})
+
+class FetchAPI {
+  public static async fetch(url: string, invalidate = false) {
+    if (invalidate) {
+      queryClient.invalidateQueries(url)
+    }
+
+    return await queryClient.fetchQuery(url, () =>
+      fetch(url).then((response) => response.json())
+    )
+  }
 }
 
-export default App;
+const axiosAPI = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com',
+  adapter: (config) => {
+    console.log('adapter')
+    return queryClient.fetchQuery(config.url!, () => {
+      console.log('axios', config.method, config.url)
+      return axios({ ...config, ...{ adapter: undefined } })
+    })
+  },
+})
+
+axiosAPI.interceptors.request.use(
+  (config) => {
+    console.log('interceptors')
+    return config
+  },
+  (error) => {
+    console.log('interceptors error')
+    return Promise.reject(error)
+  }
+)
+
+function App() {
+  // const handleClickFetch = async () => {
+  //   const data = await FetchAPI.fetch(
+  //     'https://jsonplaceholder.typicode.com/photos'
+  //   )
+  //   console.log('data', data)
+  // }
+
+  // const handleClickRefetch = async () => {
+  //   const data = await FetchAPI.fetch(
+  //     'https://jsonplaceholder.typicode.com/photos',
+  //     true
+  //   )
+  //   console.log('data', data)
+  // }
+
+  const handleClickFetch = async () => {
+    const data = await axiosAPI.post('/posts')
+    console.log('data', data)
+  }
+
+  const handleClickRefetch = async () => {
+    queryClient.invalidateQueries('/posts')
+    const data = await axiosAPI.post('/posts')
+    console.log('data', data)
+  }
+
+  return (
+    <div>
+      <p>React Query POC</p>
+
+      <button onClick={handleClickFetch}>Fetch</button>
+      <button onClick={handleClickRefetch}>Force Refetch</button>
+    </div>
+  )
+}
+
+export default App
