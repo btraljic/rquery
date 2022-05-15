@@ -60,13 +60,31 @@ function App() {
   // }
 
   const handleClickFetch = async () => {
-    const data = await axiosAPI.post('/posts')
+    const data = await axiosAPI.post('/posts', {
+      body: JSON.stringify({
+        title: 'foo',
+        body: 'bar',
+        userId: 1,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    })
     console.log('data', data)
   }
 
   const handleClickRefetch = async () => {
     queryClient.invalidateQueries('/posts')
-    const data = await axiosAPI.post('/posts')
+    const data = await axiosAPI.post('/posts', {
+      body: JSON.stringify({
+        title: 'foo',
+        body: 'bar',
+        userId: 1,
+      }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    })
     console.log('data', data)
   }
 
